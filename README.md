@@ -1,40 +1,52 @@
-# 🛠 KOIN_AIRFLOW
+﻿# KOIN_AIRFLOW
 
-KOIN 서비스의 데이터 파이프라인을 관리하기 위한 **Apache Airflow 환경**입니다.  
-GA4 → BigQuery → Dataform으로 구성된 ETL 파이프라인을 **스케줄링, 모니터링, 재시도**하기 위해 Airflow를 사용합니다.
-
----
-
-## 📌 Purpose
-
-- 일 단위 데이터 적재 및 변환 작업 자동화
-- 데이터 파이프라인 실행 상태 가시화
-- 실패 시 재시도 및 안정적인 운영
-- DAG 성공/실패 상태에 대한 Slack 알림 제공
+KOIN 서비스의 데이터 파이프라인을 관리하는 Apache Airflow 프로젝트입니다.  
+Dataform(SQLX) 기반 BigQuery 전처리 결과를 Tableau로 제공하고, Slack으로 운영 상태를 알림합니다.
 
 ---
 
-## ⚙️ Architecture
+## 목적
 
-- **Apache Airflow** (Docker Compose 기반)
-- **Executor**: CeleryExecutor
-- **Metadata DB**: PostgreSQL
-- **Message Broker**: Redis
-- **ETL**: Dataform 기반 BigQuery 파이프라인
-- **Notification**: Slack Webhook을 통한 작업 상태 알림
+- Dataform → BigQuery → Tableau 파이프라인 오케스트레이션
+- 실행 상태 모니터링 및 재시도 표준화
+- 실패 감지 및 Slack 알림
+- 운영 자동화와 확장성 확보
 
 ---
 
-## 🧪 Usage
+## 아키텍처 (현재 계획)
 
-- 로컬 개발 및 테스트 환경
-- 서버 환경으로 확장 가능한 구조
-- 운영 환경에서는 별도 서버(VM)에서 상시 실행을 전제
+- **Airflow**: Cloud Composer (GCP 관리형)
+- **ETL**: Dataform (SQLX) → BigQuery
+- **BI**: Tableau Cloud (Extract Refresh)
+- **Notification**: Slack (Webhook 또는 Bot)
+- **Secrets**: Secret Manager
 
 ---
 
-## 🔔 Notification
+## 배포 흐름 (Composer)
 
-- DAG 실행 결과(성공/실패)를 Slack으로 전송
-- 운영 중 파이프라인 이상 징후를 즉시 인지할 수 있도록 구성
+1. 로컬에서 DAG/코드 개발
+2. GitHub에 푸시
+3. Composer GCS DAGs 버킷으로 동기화 (수동 또는 CI/CD)
+4. Composer가 GCS에 있는 DAG을 실행
 
+---
+
+## 디렉터리 구조
+
+- `dags/` 실제 DAG 엔트리
+- `dags/pipelines/` 파이프라인 DAG
+- `dags/tasks/` 공통 태스크/헬퍼
+- `dags/config/` 설정/상수
+- `plugins/` 커스텀 플러그인
+- `docs/` 운영/설계 문서
+- `history.md` 작업 히스토리 기록
+
+---
+
+## 운영 원칙
+
+- 모든 파이프라인은 Airflow로 단일 관리
+- 실패 즉시 알림 + 일일 요약 알림
+- 신규 SaaS 연동 시 Secrets Manager 기반으로 확장
