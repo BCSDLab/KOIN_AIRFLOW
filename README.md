@@ -42,6 +42,7 @@ Dataform(SQLX) 기반 BigQuery 전처리 결과를 Tableau로 제공하고, Slac
 - `plugins/` 커스텀 플러그인
 - `docs/` 운영/설계 문서
 - `history.md` 작업 히스토리 기록
+- `docs/tableau_setup.md` Tableau 리프레시 설정 가이드
 
 ---
 

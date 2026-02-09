@@ -26,3 +26,22 @@
 - 문제 원인 정리: Dataform 리소스 경로 오타 수정 후 정상 동작
 - 수동 실행 중이던 DAG Run(2026-02-06T11:22:25+00:00) 사용자에 의해 중단됨
 - 내일 진행 예정: Tableau 리프레시 구현, Slack 알림, 스케줄 설정, 비용 알림 DAG
+
+## 2026-02-09
+- Tableau REST API 기반 리프레시 태스크 추가 (tableau_api.py)
+- Tableau 설정 환경변수/디버그 플래그 추가 (settings.py, TABLEAU_DEBUG_AUTH_ONLY)
+- DAG에서 tableau_refresh를 PythonOperator로 변경
+- Tableau 설정 가이드 문서 추가: docs/tableau_setup.md
+- Composer 환경변수 세팅 스크립트 추가: scripts/set_tableau_env.ps1 (debug 옵션 포함)
+- Composer env 업데이트 시도: Secret Manager에 Tableau 관련 시크릿 미존재/버전 없음 오류
+- Composer 환경 상태 UPDATING으로 업데이트 실패 (RUNNING 상태 필요)
+- PowerShell 실행 정책 문제로 스크립트 기본 실행 불가 → ExecutionPolicy Bypass로 실행
+- Secret Manager 시크릿 미생성 상태 확인 및 Composer 상태 UPDATING 확인
+- 진행 중단: Tableau Cloud Flow 자동화는 내일 진행
+
+### 내일 할 일
+- Tableau Cloud에서 contentUrl, pod 확인 및 PAT 생성
+- Flow ID 확인 (UI URL 또는 REST API로 조회)
+- Secret Manager에 Tableau 시크릿 생성/버전 등록
+- Composer 환경 상태 RUNNING 확인 후 env 업데이트 재시도
+- auth-only 디버깅 후 Flow Run Now API 태스크 추가 검토

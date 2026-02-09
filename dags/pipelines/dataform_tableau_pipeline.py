@@ -10,6 +10,7 @@ from airflow.sensors.python import PythonSensor
 
 from config.settings import DEFAULT_OWNER, DEFAULT_TIMEZONE
 from tasks.dataform_api import create_workflow_invocation, wait_for_workflow_invocation
+from tasks.tableau_api import refresh_tableau_extract
 
 
 local_tz = pendulum.timezone(DEFAULT_TIMEZONE)
@@ -41,7 +42,10 @@ with DAG(
         timeout=60 * 60 * 3,
         mode="reschedule",
     )
-    tableau_refresh = EmptyOperator(task_id="tableau_refresh")
+    tableau_refresh = PythonOperator(
+        task_id="tableau_refresh",
+        python_callable=refresh_tableau_extract,
+    )
     end = EmptyOperator(task_id="end")
 
     start >> dataform_run >> dataform_wait >> tableau_refresh >> end
