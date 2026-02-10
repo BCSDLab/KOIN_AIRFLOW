@@ -2,20 +2,14 @@
 
 ## 2026-02-06
 - GCP 프로젝트 `kap-chat` 설정
-- API 활성화: Composer, Dataform, Secret Manager
+- API 활성화: Dataform, Secret Manager
 - 서비스 계정 `airflow-prod-sa` 생성
-- 권한 부여: `composer.worker`, `dataform.admin`, `bigquery.jobUser`, `bigquery.dataEditor`, `secretmanager.secretAccessor`
-- Cloud Composer 환경 `airflow-prod` 생성 시작 (asia-northeast3, small)
-
-- README에 Composer 배포 흐름 섹션 추가
-- README.md 전체 재작성 (Composer 기반 설계/구조/운영 원칙 반영)
+- 권한 부여: `dataform.admin`, `bigquery.jobUser`, `bigquery.dataEditor`, `secretmanager.secretAccessor`
+- README.md 전체 재작성 (Airflow 기반 설계/구조/운영 원칙 반영)
 - DAG 스켈레톤 생성: dags/pipelines/dataform_tableau_pipeline.py
 - 설정 파일 추가: dags/config/settings.py
 - Dataform API 호출 설계 문서 추가: docs/dataform_api_design.md
 - 비용 알림 파이프라인 계획서 추가: docs/cost_alert_plan.md
-- Composer 환경 RUNNING 확인
-- Airflow UI: https://6df27c6b06a2417989cd681140847a9f-dot-asia-northeast3.composer.googleusercontent.com
-- DAGs 버킷: gs://asia-northeast3-airflow-pro-a44456c2-bucket/dags
 - Dataform API 호출/폴링 로직 추가: dags/tasks/dataform_api.py
 - Dataform DAG에 PythonOperator/PythonSensor 적용
 - DAG 패키지 인식용 __init__.py 추가 (dags/, dags/config, dags/tasks, dags/pipelines)
@@ -32,16 +26,31 @@
 - Tableau 설정 환경변수/디버그 플래그 추가 (settings.py, TABLEAU_DEBUG_AUTH_ONLY)
 - DAG에서 tableau_refresh를 PythonOperator로 변경
 - Tableau 설정 가이드 문서 추가: docs/tableau_setup.md
-- Composer 환경변수 세팅 스크립트 추가: scripts/set_tableau_env.ps1 (debug 옵션 포함)
-- Composer env 업데이트 시도: Secret Manager에 Tableau 관련 시크릿 미존재/버전 없음 오류
-- Composer 환경 상태 UPDATING으로 업데이트 실패 (RUNNING 상태 필요)
-- PowerShell 실행 정책 문제로 스크립트 기본 실행 불가 → ExecutionPolicy Bypass로 실행
-- Secret Manager 시크릿 미생성 상태 확인 및 Composer 상태 UPDATING 확인
 - 진행 중단: Tableau Cloud Flow 자동화는 내일 진행
 
 ### 내일 할 일
 - Tableau Cloud에서 contentUrl, pod 확인 및 PAT 생성
 - Flow ID 확인 (UI URL 또는 REST API로 조회)
 - Secret Manager에 Tableau 시크릿 생성/버전 등록
-- Composer 환경 상태 RUNNING 확인 후 env 업데이트 재시도
 - auth-only 디버깅 후 Flow Run Now API 태스크 추가 검토
+
+## 2026-02-10
+- Composer 비용 과다 이슈로 자체 호스팅 전환 결정
+- Composer 환경 설정 백업: docs/composer_env_backup.json
+- Composer 환경 삭제 요청 (airflow-prod)
+- 비용 알림 DAG 스케줄을 22시로 변경 (cost_alert_pipeline)
+- Cloud Composer 관련 문서/스크립트/체크리스트 정리
+- Self-hosted Airflow 구성 파일 추가: docker-compose.yml, .env.example
+- Self-hosted Airflow 가이드 문서 추가: docs/self_hosted_airflow.md
+- VM `airflowvm`(asia-northeast3-a, e2-medium) 재사용 결정
+- Cloud Scheduler 작업 생성: `airflowvm-start-2100`, `airflowvm-stop-2200`
+- VM에 Docker/Compose 설치 및 Airflow 초기화 완료
+- Airflow webserver/scheduler 컨테이너 실행
+- Cloud Scheduler 작업 비활성화: `airflowvm-start-2100`, `airflowvm-stop-2200`
+
+### 내일 할 일 (2026-02-11)
+- Airflow UI 접근 방식 확정 (8080 방화벽 열기 vs IAP)
+- `.env` 업데이트 (admin 비밀번호, Slack webhook, Dataform/비용/Billing Export, Tableau PAT 등)
+- Airflow 재시작 후 DAG 정상 로딩 확인
+- 비용 확인용으로 VM 런타임/과금 내역 체크
+- 필요 시 외부 IP 제거(비용 절감)

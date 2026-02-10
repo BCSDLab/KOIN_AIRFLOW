@@ -1,0 +1,89 @@
+{
+  "config": {
+    "airflowByoidUri": "https://6df27c6b06a2417989cd681140847a9f-dot-asia-northeast3.composer.byoid.googleusercontent.com",
+    "airflowUri": "https://6df27c6b06a2417989cd681140847a9f-dot-asia-northeast3.composer.googleusercontent.com",
+    "dagGcsPrefix": "gs://asia-northeast3-airflow-pro-a44456c2-bucket/dags",
+    "dataRetentionConfig": {
+      "airflowMetadataRetentionConfig": {
+        "retentionDays": 60,
+        "retentionMode": "RETENTION_MODE_ENABLED"
+      }
+    },
+    "encryptionConfig": {},
+    "environmentSize": "ENVIRONMENT_SIZE_SMALL",
+    "nodeConfig": {
+      "composerInternalIpv4CidrBlock": "100.64.128.0/20",
+      "ipAllocationPolicy": {},
+      "serviceAccount": "airflow-prod-sa@kap-chat.iam.gserviceaccount.com"
+    },
+    "privateEnvironmentConfig": {
+      "networkingConfig": {}
+    },
+    "softwareConfig": {
+      "cloudDataLineageIntegration": {},
+      "envVariables": {
+        "TABLEAU_API_VERSION": "3.27",
+        "TABLEAU_DEBUG_AUTH_ONLY": "true",
+        "TABLEAU_PAT_NAME": "",
+        "TABLEAU_PAT_SECRET": "",
+        "TABLEAU_REFRESH_TARGET": "workbook",
+        "TABLEAU_SERVER_URL": "",
+        "TABLEAU_SITE_CONTENT_URL": "",
+        "TABLEAU_WORKBOOK_ID": ""
+      },
+      "imageVersion": "composer-3-airflow-2.10.5-build.25",
+      "webServerPluginsMode": "PLUGINS_ENABLED"
+    },
+    "webServerNetworkAccessControl": {
+      "allowedIpRanges": [
+        {
+          "description": "Allows access from all IPv4 addresses (default value)",
+          "value": "0.0.0.0/0"
+        },
+        {
+          "description": "Allows access from all IPv6 addresses (default value)",
+          "value": "::0/0"
+        }
+      ]
+    },
+    "workloadsConfig": {
+      "dagProcessor": {
+        "count": 1,
+        "cpu": 1.0,
+        "memoryGb": 4.0,
+        "storageGb": 1.0
+      },
+      "scheduler": {
+        "count": 1,
+        "cpu": 0.5,
+        "memoryGb": 2.0,
+        "storageGb": 1.0
+      },
+      "triggerer": {
+        "count": 1,
+        "cpu": 0.5,
+        "memoryGb": 1.0
+      },
+      "webServer": {
+        "cpu": 1.0,
+        "memoryGb": 4.0,
+        "storageGb": 1.0
+      },
+      "worker": {
+        "cpu": 0.5,
+        "maxCount": 3,
+        "memoryGb": 2.0,
+        "minCount": 1,
+        "storageGb": 10.0
+      }
+    }
+  },
+  "createTime": "2026-02-06T10:12:08.458645Z",
+  "name": "projects/kap-chat/locations/asia-northeast3/environments/airflow-prod",
+  "state": "RUNNING",
+  "storageConfig": {
+    "bucket": "asia-northeast3-airflow-pro-a44456c2-bucket"
+  },
+  "updateTime": "2026-02-09T11:24:18.872972Z",
+  "uuid": "6df27c6b-06a2-4179-89cd-681140847a9f"
+}

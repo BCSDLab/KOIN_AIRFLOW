@@ -1,2 +1,1 @@
-"""DAGs package marker for Composer import resolution."""
-
+"""DAGs package marker for Airflow imports."""

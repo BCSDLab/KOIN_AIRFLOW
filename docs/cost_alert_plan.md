@@ -49,7 +49,7 @@
 
 - Billing Export 활성화
 - Billing Export 데이터셋/테이블 확인
-- Composer 서비스 계정에 BigQuery 조회 권한 부여
+- Airflow 실행 계정에 BigQuery 조회 권한 부여
 - Slack Webhook 또는 Bot Token 준비
 
 ### 2) BigQuery 집계 쿼리

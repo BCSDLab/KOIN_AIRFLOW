@@ -16,7 +16,7 @@ Dataform(SQLX) 기반 BigQuery 전처리 결과를 Tableau로 제공하고, Slac
 
 ## 아키텍처 (현재 계획)
 
-- **Airflow**: Cloud Composer (GCP 관리형)
+- **Airflow**: Self-hosted (Compute Engine + Docker)
 - **ETL**: Dataform (SQLX) → BigQuery
 - **BI**: Tableau Cloud (Extract Refresh)
 - **Notification**: Slack (Webhook 또는 Bot)
@@ -24,12 +24,19 @@ Dataform(SQLX) 기반 BigQuery 전처리 결과를 Tableau로 제공하고, Slac
 
 ---
 
-## 배포 흐름 (Composer)
+## 배포 흐름 (Self-hosted)
 
 1. 로컬에서 DAG/코드 개발
 2. GitHub에 푸시
-3. Composer GCS DAGs 버킷으로 동기화 (수동 또는 CI/CD)
-4. Composer가 GCS에 있는 DAG을 실행
+3. VM에서 리포지토리 pull 또는 배포 스크립트 실행
+4. Docker Compose로 Airflow 재시작/적용
+
+## 로컬/VM 실행 (Docker)
+
+1. `.env.example` → `.env` 복사 후 값 설정
+2. 초기화: `docker compose up airflow-init`
+3. 실행: `docker compose up -d`
+4. UI: `http://<VM_IP>:8080`
 
 ---
 
@@ -43,6 +50,7 @@ Dataform(SQLX) 기반 BigQuery 전처리 결과를 Tableau로 제공하고, Slac
 - `docs/` 운영/설계 문서
 - `history.md` 작업 히스토리 기록
 - `docs/tableau_setup.md` Tableau 리프레시 설정 가이드
+- `docs/self_hosted_airflow.md` Self-hosted Airflow 구축 가이드
 
 ---
 

@@ -5,20 +5,20 @@
 - [ ] 실행 정책 확정: 일 1회, Dataform 완료 후 Tableau 갱신
 
 ## 2. IAM/보안 기반 정리
-- [ ] Composer 서비스 계정 생성
+- [ ] Airflow 실행용 서비스 계정 생성
 - [ ] Dataform 권한 부여
 - [ ] BigQuery 권한 부여
 - [ ] Tableau/Slack 토큰은 Secret Manager에 저장
 
 ## 3. 네트워크 설계 (확장성 핵심)
-- [ ] Composer 환경 리전/네트워크 결정
+- [ ] Airflow VM 리전/네트워크 결정
 - [ ] VPC/사설망 접근 필요 여부 확인
 - [ ] 외부 SaaS 연동 대비 egress 정책 확인
 
-## 4. Cloud Composer 환경 구축
-- [ ] Composer 2 환경 생성
+## 4. Airflow 환경 구축
+- [ ] VM 생성 (Docker/Compose 설치)
 - [ ] Airflow 기본 설정(Variables/Connections/Plugins) 확정
-- [ ] Secret Manager 연동 설정
+- [ ] Secret Manager 연동 또는 로컬 환경변수 관리 방식 결정
 
 ## 5. Dataform 연동 DAG 구현
 - [ ] workflow_config 트리거 태스크 구현
