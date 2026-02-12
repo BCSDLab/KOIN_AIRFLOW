@@ -69,3 +69,17 @@
   - `bq_cost_query`: success
   - `slack_notify`: success
 - Slack 전송 동작 확인: Billing Export 테이블 미생성 안내 메시지 전송됨
+
+### 내일 시작할 때 (2026-02-13)
+- 현재 비용 절감을 위해 VM `airflowvm` 상태는 `TERMINATED`
+- Cloud Scheduler 작업 상태
+  - `airflowvm-start-2100`: `PAUSED`
+  - `airflowvm-stop-2200`: `PAUSED`
+- 먼저 확인할 것
+  - Billing Export 상세 데이터가 `kap-chat:gcp_billing`로 연결/저장되어 있는지 콘솔에서 확인
+  - `gcp_billing_export_resource_v1_*` 테이블 생성 여부 확인
+- 재개 순서
+  1. VM 시작: `gcloud compute instances start airflowvm --zone asia-northeast3-a`
+  2. VM 접속 후 Airflow 컨테이너 상태 확인: `cd ~/airflow && docker compose ps`
+  3. `cost_alert_pipeline` 수동 실행 후 Slack 수신 확인
+  4. 비용 테이블 생성 전이면 안내 메시지, 생성 후면 실제 비용 집계 메시지 전송 확인
