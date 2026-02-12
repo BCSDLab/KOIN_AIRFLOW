@@ -7,6 +7,7 @@ import pendulum
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
+from google.api_core.exceptions import NotFound
 
 from config.settings import (
     BILLING_EXPORT_DATASET,
@@ -27,12 +28,20 @@ SET target_date = DATE_SUB(CURRENT_DATE('{BILLING_TIMEZONE}'), INTERVAL 1 DAY);
 
 SELECT
   target_date AS cost_date,
-  IFNULL(MAX(IF(l.key = 'cost_owner_type', l.value, NULL)), 'unknown') AS cost_owner_type,
-  IFNULL(MAX(IF(l.key = 'cost_owner', l.value, NULL)), 'unknown') AS cost_owner,
-  IFNULL(MAX(IF(l.key = 'workflow', l.value, NULL)), 'unknown') AS workflow,
+  IFNULL(
+    (SELECT l.value FROM UNNEST(b.labels) AS l WHERE l.key = 'cost_owner_type' LIMIT 1),
+    'unknown'
+  ) AS cost_owner_type,
+  IFNULL(
+    (SELECT l.value FROM UNNEST(b.labels) AS l WHERE l.key = 'cost_owner' LIMIT 1),
+    'unknown'
+  ) AS cost_owner,
+  IFNULL(
+    (SELECT l.value FROM UNNEST(b.labels) AS l WHERE l.key = 'workflow' LIMIT 1),
+    'unknown'
+  ) AS workflow,
   SUM(cost) AS total_cost
 FROM `{table}` AS b
-LEFT JOIN UNNEST(b.labels) AS l
 WHERE DATE(b.usage_start_time, '{BILLING_TIMEZONE}') = target_date
 GROUP BY cost_date, cost_owner_type, cost_owner, workflow
 ORDER BY total_cost DESC
@@ -40,25 +49,50 @@ LIMIT 50
 """.strip()
 
 
+def _build_export_table_exists_query() -> str:
+    return f"""
+SELECT COUNT(1) AS table_count
+FROM `{BILLING_EXPORT_PROJECT_ID}.{BILLING_EXPORT_DATASET}.INFORMATION_SCHEMA.TABLES`
+WHERE table_name LIKE '{BILLING_EXPORT_TABLE_PREFIX}%'
+""".strip()
+
+
+def _build_missing_table_message() -> str:
+    return (
+        f"*GCP Cost Alert* ({pendulum.now(BILLING_TIMEZONE).format('YYYY-MM-DD')} {BILLING_TIMEZONE})\n"
+        f"- Billing export table not found: "
+        f"`{BILLING_EXPORT_PROJECT_ID}.{BILLING_EXPORT_DATASET}.{BILLING_EXPORT_TABLE_PREFIX}*`\n"
+        "- Configure Cloud Billing export (Detailed usage cost data) to BigQuery and retry."
+    )
+
+
 def query_daily_costs(**_context: Any) -> str:
     hook = BigQueryHook(gcp_conn_id=GCP_CONN_ID, use_legacy_sql=False)
     client = hook.get_client()
+    exists_query = _build_export_table_exists_query()
     query = _build_cost_query()
+
+    try:
+        table_count_row = next(iter(client.query(exists_query).result()), None)
+    except NotFound:
+        return _build_missing_table_message()
+
+    if not table_count_row or int(table_count_row.table_count or 0) == 0:
+        return _build_missing_table_message()
+
     rows = list(client.query(query).result())
 
-    target_date = (
-        pendulum.now(BILLING_TIMEZONE).subtract(days=1).format("YYYY-MM-DD")
-    )
+    target_date = pendulum.now(BILLING_TIMEZONE).subtract(days=1).format("YYYY-MM-DD")
     total_cost = sum(float(row.total_cost or 0) for row in rows)
 
     lines = [
-        f"*GCP 비용 알림* ({target_date} {BILLING_TIMEZONE})",
-        f"총 비용: ${total_cost:,.2f}",
-        "상위 항목:",
+        f"*GCP Cost Alert* ({target_date} {BILLING_TIMEZONE})",
+        f"Total cost: ${total_cost:,.2f}",
+        "Top items:",
     ]
 
     if not rows:
-        lines.append("- 집계된 비용이 없습니다.")
+        lines.append("- No billed usage found for the target date.")
     else:
         for row in rows[:10]:
             lines.append(

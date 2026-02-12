@@ -1,2 +1,4 @@
 venv
 .env
+*sa-key*.json
+airflow-prod-sa-key.json

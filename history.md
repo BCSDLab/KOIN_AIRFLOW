@@ -54,3 +54,18 @@
 - Airflow 재시작 후 DAG 정상 로딩 확인
 - 비용 확인용으로 VM 런타임/과금 내역 체크
 - 필요 시 외부 IP 제거(비용 절감)
+
+## 2026-02-12
+- 비용 알림 DAG(`cost_alert_pipeline`) 집계 쿼리 수정: labels `UNNEST` 중복으로 인한 비용 과대합산 이슈 제거
+- 비용 알림 메시지 포맷 정리 및 인코딩 깨짐 문자열 교체
+- Billing Export 미연결/미생성 테이블 상황에서 실패 대신 안내 메시지 전송하도록 예외 처리 추가
+- 시크릿 안전조치: `.gitignore`에 서비스 계정 키 패턴(`*sa-key*.json`) 추가
+- GCP Billing 상태 점검: 프로젝트 `kap-chat` billing account 연결 상태 확인
+- BigQuery 데이터셋 `kap-chat:gcp_billing` 생성 (US)
+- API 활성화: `cloudbilling.googleapis.com`
+- Billing Export 테이블 존재 재검증: `gcp_billing_export_resource_v1_*` 미생성(0건) 확인
+- VM(`airflowvm`)에서 `cost_alert_pipeline` unpause 및 수동 트리거 실행
+- 최신 수동 실행(`manual__2026-02-12T10:47:08+00:00`) 기준 태스크 성공 확인
+  - `bq_cost_query`: success
+  - `slack_notify`: success
+- Slack 전송 동작 확인: Billing Export 테이블 미생성 안내 메시지 전송됨
