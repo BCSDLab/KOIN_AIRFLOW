@@ -83,3 +83,88 @@
   2. VM 접속 후 Airflow 컨테이너 상태 확인: `cd ~/airflow && docker compose ps`
   3. `cost_alert_pipeline` 수동 실행 후 Slack 수신 확인
   4. 비용 테이블 생성 전이면 안내 메시지, 생성 후면 실제 비용 집계 메시지 전송 확인
+
+## 2026-02-13
+- 요청: Airflow 운영 재개 전, Billing Export 비용 테이블 생성 선행
+- 현재 계정/프로젝트 점검 완료: `marchingg42@gmail.com`, 프로젝트 `kap-chat`
+- 기존 연결 결제계정 `018460-5136FC-9053A4`는 접근 권한 부족으로 조회/설정 불가 확인
+  - `gcloud billing accounts describe 018460-5136FC-9053A4` 권한 오류
+- 접근 가능한 열린 결제계정 확인: `0111A5-C6DB11-C0603F`
+- 프로젝트 결제계정 변경 완료
+  - `gcloud billing projects link kap-chat --billing-account=0111A5-C6DB11-C0603F`
+- 결제계정 IAM 확인: 사용자 `marchingg42@gmail.com`에 `roles/billing.admin` 존재
+- BigQuery 데이터셋 상태 재확인: `kap-chat:gcp_billing` 존재(US), 테이블 0개
+- Transfer 설정 확인 결과
+  - 생성/확인된 항목: `Pricing BigQuery Transfer` 1건
+  - `dataSourceId`: `5e7e25d3-0000-2a63-baa9-089e0825fcf8`
+  - destination dataset: `gcp_billing`
+- 수동 transfer run 생성 후 상태 확인
+  - run 생성됨, 상태 `PENDING` 지속
+- 최종 확인 결과: 비용 집계용 상세 테이블 `gcp_billing_export_resource_v1_*` 미생성
+
+### 현재 막힌 지점
+- 활성화된 내보내기는 `Pricing`으로 보이며, 비용 알림 DAG에 필요한 `Detailed usage cost` 내보내기 반영이 확인되지 않음
+- 따라서 `cost_alert_pipeline`의 실제 비용 집계 검증을 진행할 수 없음
+
+### 재개 시 해야 할 일
+1. Billing 콘솔에서 `Detailed usage cost` 내보내기가 켜져 있는지 재확인
+2. 대상이 `project=kap-chat`, `dataset=gcp_billing (US)`인지 재확인
+3. 반영 대기 후 `gcp_billing_export_resource_v1_*` 생성 여부 재검증
+4. 테이블 생성 확인 후 `cost_alert_pipeline` 수동 실행 및 Slack 메시지(안내/실집계) 검증
+
+### Tableau 우선 진행 (2026-02-13 추가)
+- 비용 테이블 이슈 보류 후 Tableau 자동화 우선 진행으로 전환
+- `dags/tasks/tableau_api.py` 확장
+  - `TABLEAU_REFRESH_TARGET=flow` 지원 추가
+  - Flow 실행 API(`/flows/{flow_id}/run`) 호출 추가
+  - `TABLEAU_WAIT_FOR_JOB=true`일 때 Tableau job 폴링/완료 대기 기능 추가
+  - job 실패/타임아웃 시 예외 처리 강화
+- `dags/config/settings.py`에 Tableau 확장 환경변수 추가
+  - `TABLEAU_FLOW_ID`, `TABLEAU_WAIT_FOR_JOB`, `TABLEAU_JOB_POLL_SECONDS`, `TABLEAU_JOB_TIMEOUT_SECONDS`
+- `.env.example`에 신규 Tableau 환경변수 반영
+- `docs/tableau_setup.md` 문서 정리 및 Flow 타깃/검증 절차 반영
+- 문법 검증 완료
+  - `python -m py_compile dags/tasks/tableau_api.py dags/config/settings.py dags/pipelines/dataform_tableau_pipeline.py`
+
+### 중단 시점 상세 기록 (2026-02-13, 다음 작업자용)
+- 로컬 환경에서는 `docker` 명령이 없어 직접 실행 불가 확인
+  - 오류: `docker : The term 'docker' is not recognized`
+- VM `airflowvm` 기동 후 원격으로 Airflow 컨테이너 실행 확인
+  - webserver/scheduler/postgres 기동 상태 확인 완료
+- 로컬 `.env`를 VM `/home/march/airflow/.env`로 복사 완료
+- Airflow 태스크 단건 테스트 실행
+  - 명령: `airflow tasks test dataform_tableau_pipeline tableau_refresh 2026-02-13`
+  - 결과: 실패
+  - 실패 위치: Tableau `signin` API
+  - HTTP: `401 Unauthorized`
+- 원인 검증(직접 REST 호출) 결과
+  - 응답 코드: `401001`
+  - 응답 상세: `The personal access token you provided is invalid.`
+  - 결론: 현재 PAT(`TABLEAU_PAT_NAME`/`TABLEAU_PAT_SECRET`) 자체가 유효하지 않음
+
+#### 현재 확정된 막힘
+1. Tableau PAT가 만료/오입력/권한불일치 상태라 인증 불가
+2. 인증이 풀려도 실제 실행 타겟 ID가 비어 있음
+   - `TABLEAU_REFRESH_TARGET=workbook`인 경우 `TABLEAU_WORKBOOK_ID` 필요
+   - `TABLEAU_REFRESH_TARGET=flow`인 경우 `TABLEAU_FLOW_ID` 필요
+
+#### 재개 시 우선 순서 (커맨드 포함)
+1. Tableau Cloud에서 PAT 재발급
+   - 새 `PAT name` / `PAT secret` 확보
+2. VM `.env` 값 갱신
+   - 파일: `/home/march/airflow/.env`
+   - 필수: `TABLEAU_SERVER_URL`, `TABLEAU_SITE_CONTENT_URL`, `TABLEAU_PAT_NAME`, `TABLEAU_PAT_SECRET`
+   - 실행 대상에 따라 `TABLEAU_WORKBOOK_ID` 또는 `TABLEAU_FLOW_ID` 입력
+3. 컨테이너 재적용
+   - `cd ~/airflow && docker compose up -d`
+4. 인증 단건 검증
+   - `cd ~/airflow && docker compose exec -T airflow-scheduler airflow tasks test dataform_tableau_pipeline tableau_refresh 2026-02-13`
+5. ID 미확정이면 REST API로 목록 조회 후 ID 확정
+   - 로그인 성공 후 `workbooks`/`flows` 목록 API 호출하여 대상 ID 채움
+6. 최종 검증
+   - `dataform_tableau_pipeline` 수동 실행
+   - `tableau_refresh` 로그에서 `refresh job id` 및(옵션) job 완료 로그 확인
+
+#### 보안 메모
+- 실제 PAT/시크릿 값은 Git 추적 파일에 저장 금지
+- `.env.example`은 placeholder만 유지

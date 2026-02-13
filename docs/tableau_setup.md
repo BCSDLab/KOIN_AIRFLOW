@@ -1,27 +1,26 @@
 # Tableau Refresh Setup (Self-hosted Airflow)
 
-이 문서는 Self-hosted Airflow 환경에서 Tableau Extract Refresh를 호출하기 위한
-환경변수/시크릿 설정 가이드입니다.
+This document explains how to call Tableau refresh APIs from the Airflow task `tableau_refresh`.
 
-## 사전 준비
-1. Tableau Cloud에서 Personal Access Token(PAT) 생성
-2. 리프레시 대상 Workbook 또는 Data Source ID 확인
+## Required values
+- `TABLEAU_SERVER_URL` example: `https://prod-apn-a.online.tableau.com`
+- `TABLEAU_SITE_CONTENT_URL` example: `koin`
+- `TABLEAU_PAT_NAME`
+- `TABLEAU_PAT_SECRET`
+- `TABLEAU_REFRESH_TARGET`: `workbook`, `datasource`, or `flow`
+- `TABLEAU_WORKBOOK_ID` when target is `workbook`
+- `TABLEAU_DATASOURCE_ID` when target is `datasource`
+- `TABLEAU_FLOW_ID` when target is `flow`
 
-## 필요 환경변수
-- `TABLEAU_SERVER_URL` 예: `https://prod-apn-a.online.tableau.com`
-- `TABLEAU_SITE_CONTENT_URL` 예: `koin` (사이트 URL 경로)
-- `TABLEAU_PAT_NAME` PAT 이름
-- `TABLEAU_PAT_SECRET` PAT 시크릿
-- `TABLEAU_REFRESH_TARGET` `workbook` 또는 `datasource`
-- `TABLEAU_WORKBOOK_ID` (target이 workbook일 때)
-- `TABLEAU_DATASOURCE_ID` (target이 datasource일 때)
-- `TABLEAU_API_VERSION` 선택 사항 (기본 `3.27`)
+## Optional values
+- `TABLEAU_API_VERSION` default: `3.27`
+- `TABLEAU_WAIT_FOR_JOB` default: `false`
+- `TABLEAU_JOB_POLL_SECONDS` default: `20`
+- `TABLEAU_JOB_TIMEOUT_SECONDS` default: `3600`
+- `TABLEAU_DEBUG_AUTH_ONLY` default: `false`
 
-## 설정 방법
-1. VM의 환경변수로 주입하거나 `.env`로 관리
-2. Docker Compose에서 `env_file` 또는 `environment`로 연결
-3. 민감 정보는 Secret Manager를 사용하거나 VM 내 보안 파일로 관리
-
-## 확인 방법
-1. Airflow UI에서 `dataform_tableau_pipeline` 수동 실행
-2. `tableau_refresh` 태스크 로그에서 `refresh job id` 확인
+## Run check
+1. Open Airflow UI and run `dataform_tableau_pipeline` manually.
+2. Check `tableau_refresh` logs.
+3. Confirm `refresh job id` appears.
+4. If `TABLEAU_WAIT_FOR_JOB=true`, confirm job reaches completion in logs.
