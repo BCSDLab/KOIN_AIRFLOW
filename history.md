@@ -168,3 +168,20 @@
 #### 보안 메모
 - 실제 PAT/시크릿 값은 Git 추적 파일에 저장 금지
 - `.env.example`은 placeholder만 유지
+
+## 2026-02-22
+- 우선순위 조정: 비용 알림 검증 보류, VM 기반 Airflow의 Dataform 연동 정상 여부 먼저 검증
+- VM 상태 확인: `airflowvm` 초기 상태 `TERMINATED` 확인 후 기동 완료(`RUNNING`)
+- 초기 태스크 테스트 실패 원인 확인
+  - 실행 명령: `docker compose exec -T airflow-scheduler airflow tasks test dataform_tableau_pipeline dataform_run 2026-02-22`
+  - 오류: `psycopg2.OperationalError: could not translate host name "postgres" to address`
+  - 원인: `postgres` 컨테이너 중지 상태
+- 복구 조치
+  - `cd ~/airflow && docker compose up -d postgres airflow-scheduler airflow-webserver`
+  - `docker compose ps`로 `postgres/scheduler/webserver` 모두 `Up` 확인
+- Dataform 연동 재검증 성공
+  - 동일 명령 재실행 후 `dataform_run` 태스크 `SUCCESS`
+  - 생성된 invocation:
+    `projects/kap-chat/locations/asia-northeast3/repositories/koin-repository/workflowInvocations/1771748444-e0346e73-47ce-4dfa-b61f-e09cc9810045`
+  - Dataform REST 조회로 해당 invocation 최종 상태 `SUCCEEDED` 확인
+- 결론: Composer에서 VM(Self-hosted)로 전환 후에도 Dataform API 연동/실행은 정상 동작 확인
