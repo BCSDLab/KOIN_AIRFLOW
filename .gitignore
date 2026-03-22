@@ -1,2 +1,8 @@
 venv
 .env
+logs/
+postgres-data/
+keys/
+__pycache__/
+*.pyc
+airflow-src.tgz
