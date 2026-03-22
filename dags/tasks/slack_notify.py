@@ -56,10 +56,10 @@ def on_failure_slack(context: dict) -> None:
         - Date: 2026-03-22T06:00:00+09:00
         - Error: Dataform workflow FAILED
     """
-    dag_id = context.get("dag", {}).dag_id             # 실패한 DAG 이름
-    task_id = context.get("task_instance", {}).task_id  # 실패한 태스크 이름
-    exec_date = context.get("execution_date", "")       # 실행 예정 시각
-    exception = context.get("exception", "")             # 발생한 예외 메시지
+    dag_id = getattr(context.get("dag"), "dag_id", "unknown")              # 실패한 DAG 이름
+    task_id = getattr(context.get("task_instance"), "task_id", "unknown")  # 실패한 태스크 이름
+    exec_date = context.get("execution_date", "")                          # 실행 예정 시각
+    exception = context.get("exception", "")                                # 발생한 예외 메시지
     message = (
         f":x: *[KOIN] Pipeline FAILED*\n"
         f"- DAG: `{dag_id}`\n"
