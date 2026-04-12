@@ -1,40 +1,68 @@
-# 🛠 KOIN_AIRFLOW
+# KOIN_AIRFLOW
 
-KOIN 서비스의 데이터 파이프라인을 관리하기 위한 **Apache Airflow 환경**입니다.  
-GA4 → BigQuery → Dataform으로 구성된 ETL 파이프라인을 **스케줄링, 모니터링, 재시도**하기 위해 Airflow를 사용합니다.
+KOIN 서비스의 데이터 파이프라인을 관리하기 위한 Apache Airflow 환경.
 
----
+## Architecture
 
-## 📌 Purpose
+- **Apache Airflow 2.10.5** (Docker Compose, LocalExecutor)
+- **Metadata DB**: PostgreSQL 15
+- **ETL**: Dataform API → BigQuery
+- **Visualization**: Tableau Cloud (REST API, PAT 인증)
+- **Notification**: Slack Webhook
 
-- 일 단위 데이터 적재 및 변환 작업 자동화
-- 데이터 파이프라인 실행 상태 가시화
-- 실패 시 재시도 및 안정적인 운영
-- DAG 성공/실패 상태에 대한 Slack 알림 제공
+## DAGs
 
----
+| DAG | Schedule | Description |
+|-----|----------|-------------|
+| `koin_daily_pipeline` | 매일 KST 06:00 | GA4 Sensor → Dataform → Assertion → Tableau Refresh → Slack |
+| `cost_alert_pipeline` | 매일 KST 22:00 | GCP Billing 비용 조회 → Slack 알림 |
 
-## ⚙️ Architecture
+## Project Structure
 
-- **Apache Airflow** (Docker Compose 기반)
-- **Executor**: CeleryExecutor
-- **Metadata DB**: PostgreSQL
-- **Message Broker**: Redis
-- **ETL**: Dataform 기반 BigQuery 파이프라인
-- **Notification**: Slack Webhook을 통한 작업 상태 알림
+```
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+├── .env.example
+├── dags/
+│   ├── config/settings.py
+│   ├── pipelines/
+│   │   ├── koin_daily_pipeline.py
+│   │   └── cost_alert_pipeline.py
+│   └── tasks/
+│       ├── dataform_api.py
+│       ├── ga4_sensor.py
+│       ├── assertion_check.py
+│       ├── tableau_api.py
+│       └── slack_notify.py
+├── plugins/
+├── keys/           (gitignored)
+└── logs/           (gitignored)
+```
 
----
+## Quick Start
 
-## 🧪 Usage
+```bash
+# 1. 환경변수 설정
+cp .env.example .env
+# .env 파일에 실제 값 입력
 
-- 로컬 개발 및 테스트 환경
-- 서버 환경으로 확장 가능한 구조
-- 운영 환경에서는 별도 서버(VM)에서 상시 실행을 전제
+# 2. GCP 서비스 계정 키 배치
+mkdir -p keys
+# keys/gcp-key.json 배치
 
----
+# 3. 실행
+docker-compose up --build -d
 
-## 🔔 Notification
+# 4. 접속
+# http://localhost:8080 (admin / .env에 설정한 비밀번호)
+```
 
-- DAG 실행 결과(성공/실패)를 Slack으로 전송
-- 운영 중 파이프라인 이상 징후를 즉시 인지할 수 있도록 구성
+## Environment Variables
 
+See `.env.example` for full list. Key variables:
+
+- `DATAFORM_*` — Dataform API 설정
+- `TABLEAU_*` — Tableau Cloud PAT 인증 및 datasource IDs
+- `SLACK_WEBHOOK_URL` — Slack 알림
+- `BILLING_*` — GCP 비용 알림
