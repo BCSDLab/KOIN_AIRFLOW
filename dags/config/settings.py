@@ -71,6 +71,29 @@ SLACK_USERNAME = os.getenv("SLACK_USERNAME", "airflow-koin")  # Slack 메시지 
 # - cost_alert_pipeline DAG에서 사용합니다.
 # - Cloud Billing Export 테이블에서 전일 비용을 조회하여 Slack으로 알림합니다.
 # =====================================================================
+# =====================================================================
+# 로깅 모니터링 설정
+# - 신규 로깅 감지 및 로깅 감소 알림에 사용합니다.
+# =====================================================================
+LOGGING_LOOKBACK_DAYS = int(os.getenv("LOGGING_LOOKBACK_DAYS", "30"))  # 신규 로깅 판별 기준 기간 (일)
+MART_DATASET = os.getenv("MART_DATASET", "mart")                       # Mart 데이터셋 이름
+MART_INTEGRATED_VIEW = os.getenv("MART_INTEGRATED_VIEW", "vw_mart_integrated_logs")  # 통합 마트 뷰 이름
+
+# =====================================================================
+# Tableau Flow 설정
+# - Tableau Cloud Flow 실행을 트리거할 때 사용합니다.
+# =====================================================================
+TABLEAU_FLOW_IDS = [
+    f.strip()
+    for f in os.getenv("TABLEAU_FLOW_IDS", "").split(",")
+    if f.strip()
+]
+
+# =====================================================================
+# GCP Billing 설정
+# - cost_alert_pipeline DAG에서 사용합니다.
+# - Cloud Billing Export 테이블에서 전일 비용을 조회하여 Slack으로 알림합니다.
+# =====================================================================
 BILLING_EXPORT_PROJECT_ID = os.getenv("BILLING_EXPORT_PROJECT_ID", DATAFORM_PROJECT_ID)                  # 빌링 데이터가 있는 프로젝트
 BILLING_EXPORT_DATASET = os.getenv("BILLING_EXPORT_DATASET", "gcp_billing")                              # 빌링 Export 데이터셋
 BILLING_EXPORT_TABLE_PREFIX = os.getenv("BILLING_EXPORT_TABLE_PREFIX", "gcp_billing_export_resource_v1_")  # 빌링 테이블 접두사

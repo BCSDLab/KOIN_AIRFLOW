@@ -22,6 +22,7 @@ import requests
 from config.settings import (
     TABLEAU_API_VERSION,
     TABLEAU_DATASOURCE_IDS,
+    TABLEAU_FLOW_IDS,
     TABLEAU_JOB_POLL_SECONDS,
     TABLEAU_JOB_TIMEOUT_SECONDS,
     TABLEAU_PAT_NAME,
@@ -156,6 +157,53 @@ def _wait_for_job(token: str, site_id: str, job_id: str) -> None:
 
     # timeout 초과
     raise TimeoutError(f"Tableau job timeout: {job_id}")
+
+
+def _run_flow(token: str, site_id: str, flow_id: str) -> str | None:
+    """
+    특정 Tableau Flow 실행을 트리거합니다.
+
+    Args:
+        token: Tableau 인증 토큰
+        site_id: 사이트 고유 ID
+        flow_id: 실행할 Flow의 LUID
+
+    Returns:
+        job_id: Flow 실행 작업의 ID (polling용). 없으면 None.
+    """
+    url = f"{_base_url()}/sites/{site_id}/flows/{flow_id}/run"
+    headers = {"X-Tableau-Auth": token, "Accept": "application/json"}
+    print(f"[tableau] run flow: {flow_id}")
+    response = requests.post(url, headers=headers, json={}, timeout=30)
+    response.raise_for_status()
+
+    job = response.json().get("job")
+    return job.get("id") if isinstance(job, dict) else None
+
+
+def run_all_flows(**_context: Any) -> None:
+    """
+    TABLEAU_FLOW_IDS에 등록된 모든 Flow를 순차적으로 실행합니다.
+
+    흐름:
+        1. PAT으로 로그인
+        2. 각 Flow에 대해 run 요청 → job_id 획득
+        3. TABLEAU_WAIT_FOR_JOB=true면 완료까지 polling 대기
+        4. 로그아웃 (finally로 보장)
+    """
+    if not TABLEAU_FLOW_IDS:
+        print("[tableau] No flow IDs configured, skipping.")
+        return
+
+    token, site_id = _sign_in()
+    try:
+        for flow_id in TABLEAU_FLOW_IDS:
+            job_id = _run_flow(token, site_id, flow_id)
+            if job_id and TABLEAU_WAIT_FOR_JOB:
+                _wait_for_job(token, site_id, job_id)
+        print(f"[tableau] All {len(TABLEAU_FLOW_IDS)} flows executed.")
+    finally:
+        _sign_out(token)
 
 
 def refresh_all_datasources(**_context: Any) -> None:

@@ -31,7 +31,7 @@ from config.settings import (
     DEFAULT_OWNER,
     GCP_CONN_ID,
 )
-from tasks.slack_notify import send_slack_message
+from tasks.slack_notify import on_failure_slack, send_slack_message
 
 
 def _build_cost_query() -> str:
@@ -161,13 +161,14 @@ def query_daily_costs(**_context: Any) -> str:
 # ---------------------------------------------------------------------------
 with DAG(
     dag_id="cost_alert_pipeline",
-    schedule_interval="0 22 * * *",  # 매일 KST 22:00
+    schedule="0 22 * * *",  # 매일 KST 22:00
     start_date=pendulum.datetime(2026, 2, 10, tz=BILLING_TIMEZONE),
     catchup=False,
     default_args={
         "owner": DEFAULT_OWNER,
         "retries": 2,                           # 실패 시 2회 재시도
         "retry_delay": timedelta(minutes=5),     # 재시도 간격 5분
+        "on_failure_callback": on_failure_slack,  # 실패 시 Slack 알림
     },
     tags=["cost", "billing", "slack"],
 ) as dag:
